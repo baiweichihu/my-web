@@ -18,10 +18,8 @@ import { defaultHeroSelection, heroImages, heroIntros, heroNames } from './hero/
 import { defaultSections } from './siteData';
 import { renderSectionContent } from './sections';
 
-const CONSOLE_PASSWORD = 'password';
-const SETTINGS_KEY = 'my-web-template-settings';
-const CONSOLE_SESSION_KEY = 'my-web-console-unlocked';
-const DEFAULT_LAYOUT_ITEM_HEIGHT = 280;
+const SETTINGS_KEY = 'my-web-settings';
+const DEFAULT_LAYOUT_PANEL_HEIGHT = 280;
 const DEFAULT_LAYOUT_GAP = 16;
 
 const ui = {
@@ -48,11 +46,8 @@ const ui = {
     dark: '深色',
     ownerArea: '站点配置',
     consoleTitle: '控制台',
-    password: '密码',
-    unlock: '解锁控制台',
     close: '关闭',
     reset: '重置设置',
-    wrongPassword: '密码不对。默认密码是 password，可以在源码中修改。',
     contentSort: '板块排序',
     visibilityControl: '可见控制',
     cancel: '取消',
@@ -85,11 +80,8 @@ const ui = {
     dark: 'Deep Blue',
     ownerArea: 'Site Config',
     consoleTitle: 'Console',
-    password: 'Password',
-    unlock: 'Unlock Console',
     close: 'Close',
     reset: 'Reset Settings',
-    wrongPassword: 'Wrong password. The default is password and can be changed in source code.',
     contentSort: 'Section Sorting',
     visibilityControl: 'Visibility Control',
     cancel: 'Cancel',
@@ -122,7 +114,7 @@ function normalizeSettings(storedSettings) {
   const defaults = buildDefaultSettings();
   if (!storedSettings) return defaults;
 
-  const sourceSections = Array.isArray(storedSettings.sections) ? storedSettings.sections : defaults.sections;
+  const storedSections = Array.isArray(storedSettings.sections) ? storedSettings.sections : [];
 
   return {
     ...defaults,
@@ -132,17 +124,19 @@ function normalizeSettings(storedSettings) {
       ...(storedSettings.hero ?? {}),
       imageIds: Array.isArray(storedSettings.hero?.imageIds) ? storedSettings.hero.imageIds : defaults.hero.imageIds,
     },
-    sections: sourceSections
-      .filter((section) => section.id !== 'hero' && section.type !== 'hero')
-      .map((section, index) => ({
+    sections: defaults.sections
+      .map((section, index) => {
+        const storedSection = storedSections.find((record) => record.id === section.id);
+        return {
         id: section.id,
-        visible: section.visible !== false,
-        order: Number(section.order ?? index + 1),
+        visible: storedSection?.visible ?? section.visible !== false,
+        order: Number(storedSection?.order ?? section.order ?? index + 1),
         title: {
-          zh: section.title?.zh ?? section.label?.zh ?? '新板块',
-          en: section.title?.en ?? section.label?.en ?? 'New Section',
+          zh: section.title?.zh ?? '新板块',
+          en: section.title?.en ?? 'New Section',
         },
-      })),
+      };
+      }),
   };
 }
 
@@ -181,12 +175,12 @@ function rectsOverlap(a, b) {
   );
 }
 
-function findLayoutOverlaps(layoutItems) {
+function findLayoutOverlaps(layoutBoxes) {
   const issues = [];
-  for (let i = 0; i < layoutItems.length; i += 1) {
-    for (let j = i + 1; j < layoutItems.length; j += 1) {
-      if (rectsOverlap(layoutItems[i], layoutItems[j])) {
-        issues.push([layoutItems[i].id, layoutItems[j].id]);
+  for (let i = 0; i < layoutBoxes.length; i += 1) {
+    for (let j = i + 1; j < layoutBoxes.length; j += 1) {
+      if (rectsOverlap(layoutBoxes[i], layoutBoxes[j])) {
+        issues.push([layoutBoxes[i].id, layoutBoxes[j].id]);
       }
     }
   }
@@ -200,43 +194,42 @@ function formatLayoutIssue(issues, text) {
 function buildDefaultPixelLayout(panels, containerWidth) {
   const columnGap = DEFAULT_LAYOUT_GAP;
   const columnWidth = (containerWidth - columnGap) / 2;
-  const layoutItems = [];
+  const layoutBoxes = [];
 
   panels.forEach((panel, index) => {
     const column = index % 2;
     const row = Math.floor(index / 2);
-    layoutItems.push({
+    layoutBoxes.push({
       id: panel.section.id,
       left: column * (columnWidth + columnGap),
-      top: row * (DEFAULT_LAYOUT_ITEM_HEIGHT + columnGap),
+      top: row * (DEFAULT_LAYOUT_PANEL_HEIGHT + columnGap),
       width: columnWidth,
-      height: DEFAULT_LAYOUT_ITEM_HEIGHT,
+      height: DEFAULT_LAYOUT_PANEL_HEIGHT,
     });
   });
 
-  return layoutItems;
+  return layoutBoxes;
 }
 
-function normalizeStoredLayout(item, fallback, containerWidth) {
-  if (!item) return fallback;
+function normalizeStoredLayout(layoutBox, fallback, containerWidth) {
+  if (!layoutBox) return fallback;
 
   return {
     id: fallback.id,
-    left: Math.max(0, Math.min(containerWidth - 80, item.left ?? fallback.left)),
-    top: Math.max(0, item.top ?? fallback.top),
-    width: Math.max(120, Math.min(containerWidth, item.width ?? fallback.width)),
-    height: Math.max(120, item.height ?? fallback.height),
+    left: Math.max(0, Math.min(containerWidth - 80, layoutBox.left ?? fallback.left)),
+    top: Math.max(0, layoutBox.top ?? fallback.top),
+    width: Math.max(120, Math.min(containerWidth, layoutBox.width ?? fallback.width)),
+    height: Math.max(120, layoutBox.height ?? fallback.height),
   };
 }
 
 function copyLayoutMap(layout = {}) {
-  return Object.fromEntries(Object.entries(layout ?? {}).map(([id, item]) => [id, { ...item }]));
+  return Object.fromEntries(Object.entries(layout ?? {}).map(([id, layoutBox]) => [id, { ...layoutBox }]));
 }
 
 function App() {
   const [settings, setSettings] = useState(readStoredSettings);
   const [view, setView] = useState('home');
-  const [consoleUnlocked, setConsoleUnlocked] = useState(() => window.sessionStorage.getItem(CONSOLE_SESSION_KEY) === 'true');
   const [layoutDragging, setLayoutDragging] = useState(false);
   const [layoutSaved, setLayoutSaved] = useState(false);
   const [layoutIssues, setLayoutIssues] = useState([]);
@@ -261,7 +254,7 @@ function App() {
     setLayoutSaved(false);
     const issues = findLayoutOverlaps(layout);
     setLayoutIssues(issues);
-    setLayoutDraft(Object.fromEntries(layout.map((item) => [item.id, item])));
+    setLayoutDraft(Object.fromEntries(layout.map((layoutBox) => [layoutBox.id, layoutBox])));
   };
   const toggleSection = (sectionId) => {
     setSettings((current) => ({
@@ -307,11 +300,6 @@ function App() {
           setView('home');
         }}
         onEnterLayout={enterLayoutMode}
-        initialUnlocked={consoleUnlocked}
-        onUnlock={() => {
-          window.sessionStorage.setItem(CONSOLE_SESSION_KEY, 'true');
-          setConsoleUnlocked(true);
-        }}
         onUpdate={updateSettings}
         onUpdateHero={updateHero}
         onToggleSection={toggleSection}
@@ -338,8 +326,8 @@ function App() {
                 aria-label={text.saveLayout}
                 title={text.saveLayout}
                 onClick={() => {
-                  const layoutItems = Object.values(layoutDraft ?? {});
-                  const issues = findLayoutOverlaps(layoutItems);
+                  const layoutBoxes = Object.values(layoutDraft ?? {});
+                  const issues = findLayoutOverlaps(layoutBoxes);
                   if (issues.length) {
                     setLayoutSaved(false);
                     setLayoutIssues(issues);
@@ -487,20 +475,20 @@ function StaticLayoutDashboard({ panels, language, layout }) {
     ?? Math.min(Math.max(window.innerWidth - 48, 320), 1320);
   const defaultLayout = buildDefaultPixelLayout(panels, containerWidth);
   const renderedLayout = defaultLayout.map((fallback) => normalizeStoredLayout(layout[fallback.id], fallback, containerWidth));
-  const canvasHeight = Math.max(0, ...renderedLayout.map((item) => item.top + item.height)) + DEFAULT_LAYOUT_GAP;
+  const canvasHeight = Math.max(0, ...renderedLayout.map((layoutBox) => layoutBox.top + layoutBox.height)) + DEFAULT_LAYOUT_GAP;
 
   return (
     <div className="static-layout-canvas" ref={canvasRef} style={{ minHeight: canvasHeight }}>
       {panels.map((panel) => {
-        const item = renderedLayout.find((layoutItem) => layoutItem.id === panel.section.id);
+        const layoutBox = renderedLayout.find((candidate) => candidate.id === panel.section.id);
         return (
           <div
             className="static-layout-panel"
             key={panel.section.id}
             style={{
-              width: item.width,
-              height: item.height,
-              transform: `translate(${item.left}px, ${item.top}px)`,
+              width: layoutBox.width,
+              height: layoutBox.height,
+              transform: `translate(${layoutBox.left}px, ${layoutBox.top}px)`,
             }}
           >
             <SectionPanel panel={panel} language={language} />
@@ -523,28 +511,28 @@ function MoveableDashboard({ panels, language, layout, onLayoutChange, onDragSta
     ?? Math.min(Math.max(window.innerWidth - 48, 320), 1320);
   const defaultLayout = buildDefaultPixelLayout(panels, containerWidth);
   const renderedLayout = defaultLayout.map((fallback) => normalizeStoredLayout(layout[fallback.id], fallback, containerWidth));
-  const canvasHeight = Math.max(0, ...renderedLayout.map((item) => item.top + item.height)) + DEFAULT_LAYOUT_GAP;
+  const canvasHeight = Math.max(0, ...renderedLayout.map((layoutBox) => layoutBox.top + layoutBox.height)) + DEFAULT_LAYOUT_GAP;
   liveLayoutRef.current = renderedLayout;
 
-  const syncIssue = (items) => {
-    const issues = findLayoutOverlaps(items);
+  const syncIssue = (layoutBoxes) => {
+    const issues = findLayoutOverlaps(layoutBoxes);
     onLayoutIssueChange(issues);
   };
 
   const commitLiveLayout = () => {
-    const items = liveLayoutRef.current.map((item) => ({ ...item }));
-    onLayoutChange(items);
-    syncIssue(items);
+    const layoutBoxes = liveLayoutRef.current.map((layoutBox) => ({ ...layoutBox }));
+    onLayoutChange(layoutBoxes);
+    syncIssue(layoutBoxes);
   };
 
-  const updateLiveItem = (sectionId, patch) => {
-    liveLayoutRef.current = liveLayoutRef.current.map((item) => (item.id === sectionId ? { ...item, ...patch } : item));
+  const updateLiveLayoutBox = (sectionId, patch) => {
+    liveLayoutRef.current = liveLayoutRef.current.map((layoutBox) => (layoutBox.id === sectionId ? { ...layoutBox, ...patch } : layoutBox));
   };
 
   return (
     <div className="moveable-canvas" ref={canvasRef} style={{ minHeight: canvasHeight }}>
       {panels.map((panel) => {
-        const item = renderedLayout.find((layoutItem) => layoutItem.id === panel.section.id);
+        const layoutBox = renderedLayout.find((candidate) => candidate.id === panel.section.id);
         return (
           <div
             className={`moveable-panel ${selectedId === panel.section.id ? 'selected' : ''}`}
@@ -554,9 +542,9 @@ function MoveableDashboard({ panels, language, layout, onLayoutChange, onDragSta
               if (node) targetsRef.current[panel.section.id] = node;
             }}
             style={{
-              width: item.width,
-              height: item.height,
-              transform: `translate(${item.left}px, ${item.top}px)`,
+              width: layoutBox.width,
+              height: layoutBox.height,
+              transform: `translate(${layoutBox.left}px, ${layoutBox.top}px)`,
             }}
             onPointerDown={() => {
               setSelectedId(panel.section.id);
@@ -585,7 +573,7 @@ function MoveableDashboard({ panels, language, layout, onLayoutChange, onDragSta
             const [left, top] = event.beforeTranslate;
             const safeTop = Math.max(0, top);
             event.target.style.transform = `translate(${left}px, ${safeTop}px)`;
-            updateLiveItem(selectedId, { left, top: safeTop });
+            updateLiveLayoutBox(selectedId, { left, top: safeTop });
           }}
           onDragEnd={() => {
             onDragStateChange(false);
@@ -600,7 +588,7 @@ function MoveableDashboard({ panels, language, layout, onLayoutChange, onDragSta
             event.target.style.width = `${width}px`;
             event.target.style.height = `${height}px`;
             event.target.style.transform = `translate(${left}px, ${safeTop}px)`;
-            updateLiveItem(selectedId, { left, top: safeTop, width, height });
+            updateLiveLayoutBox(selectedId, { left, top: safeTop, width, height });
           }}
           onResizeEnd={() => {
             onDragStateChange(false);
@@ -625,22 +613,8 @@ function SectionPanel({ panel, language, editMode = false }) {
 }
 
 function OwnerConsole(props) {
-  const { settings, hero, sections, text, language, onClose, onEnterLayout, initialUnlocked, onUnlock, onUpdate, onUpdateHero, onToggleSection, onSaveContentSort, onReset } = props;
-  const [password, setPassword] = useState('');
-  const [unlocked, setUnlocked] = useState(initialUnlocked);
-  const [error, setError] = useState('');
+  const { settings, hero, sections, text, language, onClose, onEnterLayout, onUpdate, onUpdateHero, onToggleSection, onSaveContentSort, onReset } = props;
   const [activeTab, setActiveTab] = useState('hero');
-
-  const unlock = (event) => {
-    event.preventDefault();
-    if (password === CONSOLE_PASSWORD) {
-      setUnlocked(true);
-      onUnlock();
-      setError('');
-    } else {
-      setError(text.wrongPassword);
-    }
-  };
 
   return (
     <div className={`console-screen ${settings.theme === 'dark' ? 'theme-dark' : 'theme-light'}`} role="dialog" aria-modal="true" aria-label={text.consoleTitle}>
@@ -652,15 +626,7 @@ function OwnerConsole(props) {
         <button className="btn btn-icon btn-outline-secondary" type="button" aria-label={text.close} onClick={onClose}><X size={18} /></button>
       </header>
 
-      {!unlocked ? (
-        <form className="console-login" onSubmit={unlock}>
-          <label className="form-label" htmlFor="console-password">{text.password}</label>
-          <input className="form-control mb-2" id="console-password" type="password" value={password} autoFocus onChange={(event) => setPassword(event.target.value)} />
-          {error && <p className="text-danger small mb-2">{error}</p>}
-          <button className="btn btn-primary w-100" type="submit">{text.unlock}</button>
-        </form>
-      ) : (
-        <div className="console-workspace">
+      <div className="console-workspace">
           <aside className="console-sidebar">
             <button className={`console-tab ${activeTab === 'hero' ? 'active' : ''}`} type="button" onClick={() => setActiveTab('hero')}>{text.heroControl}</button>
             <button className={`console-tab ${activeTab === 'sort' ? 'active' : ''}`} type="button" onClick={() => setActiveTab('sort')}>{text.contentSort}</button>
@@ -673,8 +639,7 @@ function OwnerConsole(props) {
             {activeTab === 'visibility' && <VisibilityControl sections={sections} text={text} language={language} onToggleSection={onToggleSection} />}
             {activeTab === 'layout' && <LayoutControl settings={settings} text={text} onReset={onReset} onEnter={() => { onUpdate({ editMode: true }); onEnterLayout(); }} />}
           </section>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -689,7 +654,7 @@ function HeroControl({ hero, text, language, onUpdate }) {
     const nextIds = selectedImageIds.includes(imageId)
       ? selectedImageIds.filter((id) => id !== imageId)
       : [...selectedImageIds, imageId];
-    onUpdate({ imageIds: nextIds.length > 0 ? nextIds : [imageId] });
+    onUpdate({ imageIds: nextIds });
   };
 
   return (
@@ -701,9 +666,9 @@ function HeroControl({ hero, text, language, onUpdate }) {
         </div>
       </div>
 
-      <div className="basic-grid hero-control-grid mt-3">
-        <label className="setting-row">
-          <span>{text.heroName}</span>
+      <div className="hero-control-list mt-3">
+        <label className="hero-control-row">
+          <span className="hero-control-label">{text.heroName}</span>
           <select className="form-select" value={hero.nameId} onChange={(event) => onUpdate({ nameId: event.target.value })}>
             {heroNames.map((name) => (
               <option value={name.id} key={name.id}>{name.label}: {name.value}</option>
@@ -711,8 +676,8 @@ function HeroControl({ hero, text, language, onUpdate }) {
           </select>
         </label>
 
-        <label className="setting-row">
-          <span>{text.heroIntro}</span>
+        <label className="hero-control-row">
+          <span className="hero-control-label">{text.heroIntro}</span>
           <select className="form-select" value={hero.introId} onChange={(event) => onUpdate({ introId: event.target.value })}>
             {heroIntros.map((intro) => (
               <option value={intro.id} key={intro.id}>{getText(intro.label, language)}</option>
@@ -720,16 +685,22 @@ function HeroControl({ hero, text, language, onUpdate }) {
           </select>
         </label>
 
-        <div className="hero-image-control">
-          <strong>{text.heroImages}</strong>
-          <div className="visibility-tree mt-2">
+        <div className="hero-control-row hero-control-row-top">
+          <span className="hero-control-label">{text.heroImages}</span>
+          <div className="hero-image-options">
             {heroImages.map((image) => (
-              <SwitchToggle
-                checked={selectedImageIds.includes(image.id)}
-                label={getText(image.label, language)}
-                onChange={() => toggleImage(image.id)}
-                key={image.id}
-              />
+              <label className="hero-image-option" key={image.id}>
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={selectedImageIds.includes(image.id)}
+                  onChange={() => toggleImage(image.id)}
+                />
+                <span className="hero-image-copy">
+                  <strong>{getText(image.label, language)}</strong>
+                  <span>{getText(image.alt, language) || image.id}</span>
+                </span>
+              </label>
             ))}
           </div>
         </div>

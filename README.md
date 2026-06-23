@@ -11,8 +11,6 @@ npm install
 npm run dev
 ```
 
-The console password is `password` and is defined in `src/main.jsx`.
-
 ## Where To Write Content
 
 Hero options live in:
@@ -48,7 +46,7 @@ To add a regular section:
 3. Import and map it in `src/sections/index.jsx`.
 4. Run `npm run build`.
 
-The console only controls regular sections: sorting, visibility, and layout tuning.
+The console controls Hero choices and regular section sorting, visibility, and layout tuning.
 
 If you do not want to write React/HTML/CSS, keep content in simple data files like `src/hero/heroData.js`, then let components render that data.
 

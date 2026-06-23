@@ -1,4 +1,8 @@
-const sectionComponents = {};
+import { AboutSection } from './AboutSection';
+
+const sectionComponents = {
+  about: AboutSection,
+};
 
 function EmptySection({ section }) {
   return (

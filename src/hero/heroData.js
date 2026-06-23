@@ -2,22 +2,27 @@ export const heroNames = [
   {
     id: 'zh-name',
     label: '中文名',
-    value: '你的中文名',
+    value: '李林峰',
   },
   {
     id: 'en-name',
     label: '英文名',
-    value: 'Your English Name',
+    value: 'Li Linfeng',
   },
   {
-    id: 'nickname',
-    label: '昵称',
-    value: '你的昵称',
+    id: 'nickname1',
+    label: '昵称1',
+    value: '白尾赤狐',
   },
   {
-    id: 'handle',
-    label: '网名',
-    value: '你的网名',
+    id: 'nickname2',
+    label: '昵称2',
+    value: '枫',
+  },
+  {
+    id: 'nickname3',
+    label: '昵称3',
+    value: 'MapleFox',
   },
 ];
 
@@ -34,16 +39,16 @@ export const heroIntros = [
     id: 'resume',
     label: { zh: '简历版', en: 'Resume' },
     text: {
-      zh: '这里写一段更适合求职、合作或正式场景的简介。',
-      en: 'Write a more formal introduction for recruiting, collaboration, or professional contexts.',
+      zh: '香港科技大学本科在读，计算机科学专业准大三生，热爱且擅长AI编程。',
+      en: 'An upcoming Year 3 UG student at Hong Kong University of Science and Technology, majoring in Computer Science, passionate about and skilled in AI coding.',
     },
   },
   {
     id: 'personal',
     label: { zh: '个人版', en: 'Personal' },
     text: {
-      zh: '这里写一段更像你自己的话，可以更松弛、更有生活感。',
-      en: 'Write something that sounds more like you: relaxed, personal, and lived-in.',
+      zh: '没有人比我更了解我自己。',
+      en: 'No one knows me better than myself.',
     },
   },
 ];
@@ -51,15 +56,15 @@ export const heroIntros = [
 export const heroImages = [
   {
     id: 'portrait',
-    label: { zh: '人头像', en: 'Portrait' },
+    label: { zh: '证件照', en: 'Portrait' },
     src: '',
-    alt: { zh: '人头像', en: 'Portrait' },
+    alt: { zh: '证件照', en: 'Portrait' },
   },
   {
-    id: 'symbol',
-    label: { zh: '代表我的图片', en: 'Personal Symbol' },
+    id: 'personal_photo',
+    label: { zh: '生活照', en: 'Personal Photo' },
     src: '',
-    alt: { zh: '代表我的图片', en: 'Personal symbol' },
+    alt: { zh: '生活照', en: 'Personal photo' },
   },
 ];
 
