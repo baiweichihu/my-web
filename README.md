@@ -1,8 +1,8 @@
-# My Web Template
+# My Web
 
-A configurable personal website template built with React, Vite, Bootstrap, and GitHub Pages.
+A personal website built with React, Vite, Bootstrap, and GitHub Pages.
 
-It ships with a lightweight local console for language, theme, content management, visibility control, Markdown editing, and grid-based edit mode.
+Hero is independent from sections. Regular content sections are hard-coded React/HTML files.
 
 ## Local Development
 
@@ -11,40 +11,46 @@ npm install
 npm run dev
 ```
 
-The console is intentionally lightweight because this is a static GitHub Pages site.
-The default console password is `password` and is defined in `src/main.jsx`.
+The console password is `password` and is defined in `src/main.jsx`.
 
-## Editing Content
+## Where To Write Content
 
-Most public content lives in `src/siteData.js`.
+Hero options live in:
 
-- Add, remove, or edit entries in `defaultContentItems`.
-- Change default section names and ordering in `defaultSections`.
-- Use `visible: true` or `visible: false` to choose the default public state.
-- Put Chinese text under `zh` and English text under `en`.
-- Run `npm run build` after edits to verify the site still builds.
+```txt
+src/hero/heroData.js
+```
 
-The browser console controls are saved in `localStorage`, so they only affect the current browser unless you also update `src/siteData.js`.
-To change what everyone sees on GitHub Pages by default, edit `src/siteData.js` and redeploy.
+Edit the name options, intro options, and image options there. The console chooses which option is active. Hero always shows at the top of the page, does not appear in section sorting, and does not participate in layout dragging.
 
-## Editing Experience
+Hero layout lives in:
 
-- The settings button opens language, theme, and console controls.
-- The console is a separate full-screen interface instead of an overlay on the homepage.
-- The homepage hero is a special block with visibility control and portrait upload.
-- Content editing and content sorting are separated; sorting uses draggable section and item rows.
-- Item descriptions support Markdown rendering and a reusable MDXEditor modal.
-- MDXEditor attachments are stored in `localStorage` as data URLs for now.
-- Layout tuning is entered from the console and uses `react-moveable` for pointer-based drag and resize with snapping guides.
-- Exiting layout tuning returns to the unlocked console view.
-- Layout saving is blocked when blocks overlap, and overlap warnings are shown persistently after drag or resize.
-- Layout changes are edited as a draft and are committed only after the save check passes.
-- The layout tuning action bar stays sticky near the top while editing.
-- Layout tuning uses the same container width as the public homepage.
-- Layout tuning uses a finer vertical grid for less rigid height adjustment.
-- The unlocked console session is preserved in `sessionStorage` for the current browser session.
-- Layout tuning includes save-current-layout and restore-default-layout buttons.
-- GitHub-Flavored Markdown tables are rendered on the public page.
+```txt
+src/hero/Hero.jsx
+```
+
+Regular section metadata lives in:
+
+```txt
+src/siteData.js
+```
+
+Regular section bodies live in separate files under:
+
+```txt
+src/sections/
+```
+
+To add a regular section:
+
+1. Add a record to `defaultSections` in `src/siteData.js`.
+2. Create a matching component file in `src/sections`, for example `AboutSection.jsx`.
+3. Import and map it in `src/sections/index.jsx`.
+4. Run `npm run build`.
+
+The console only controls regular sections: sorting, visibility, and layout tuning.
+
+If you do not want to write React/HTML/CSS, keep content in simple data files like `src/hero/heroData.js`, then let components render that data.
 
 ## Build
 
@@ -52,4 +58,4 @@ To change what everyone sees on GitHub Pages by default, edit `src/siteData.js` 
 npm run build
 ```
 
-The site uses a relative Vite base path, so it can be deployed from this template repository or from a generated repository without changing the repository name in config.
+The site uses a relative Vite base path, so it can be deployed from this repository without changing the repository name in config.
