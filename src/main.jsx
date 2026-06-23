@@ -12,6 +12,9 @@ import {
   X,
 } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'swiper/css';
+import 'swiper/css/effect-fade';
+import 'swiper/css/navigation';
 import './styles.css';
 import { Hero } from './hero/Hero';
 import { defaultHeroSelection, heroImages, heroIntros, heroNames } from './hero/heroData';

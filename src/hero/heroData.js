@@ -1,3 +1,7 @@
+import qq_avatar from '../assets/hero/qq_avatar.jpg';
+import wechat_avatar from '../assets/hero/wechat_avatar.jpg';
+import portrait from '../assets/hero/portrait.jpg'
+
 export const heroNames = [
   {
     id: 'zh-name',
@@ -57,7 +61,7 @@ export const heroImages = [
   {
     id: 'portrait',
     label: { zh: '证件照', en: 'Portrait' },
-    src: '',
+    src: portrait,
     alt: { zh: '证件照', en: 'Portrait' },
   },
   {
@@ -66,6 +70,18 @@ export const heroImages = [
     src: '',
     alt: { zh: '生活照', en: 'Personal photo' },
   },
+  {
+    id: 'qq_avatar',
+    label: { zh: '可爱头像', en: 'Cute Avatar' },
+    src: qq_avatar,
+    alt: { zh: '可爱头像', en: 'Cute avatar' },
+  },
+  {
+    id: 'wechat_avatar',
+    label: { zh: '尼克狐尼克', en: 'Nick the Fox' },
+    src: wechat_avatar,
+    alt: { zh: '尼克狐尼克', en: 'Nick the Fox' },
+  }
 ];
 
 export const defaultHeroSelection = {

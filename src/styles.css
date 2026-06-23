@@ -182,19 +182,90 @@ body {
   display: grid;
   justify-items: center;
   align-content: center;
+  width: 100%;
+  min-width: 0;
 }
 
-.hero-photo-box img,
+.hero-carousel {
+  width: min(100%, 18rem);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.hero-carousel .swiper-wrapper,
+.hero-carousel .swiper-slide {
+  width: 100%;
+  height: 100%;
+}
+
+.hero-carousel .swiper-slide {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.hero-image-frame,
 .hero-photo-placeholder {
-  width: min(100%, 15rem);
-  aspect-ratio: 3 / 4;
-  border: 1px solid var(--line-soft);
-  border-radius: 0.75rem;
-  background:
-    linear-gradient(135deg, rgba(127, 174, 194, 0.22), rgba(255, 255, 255, 0.34)),
-    var(--panel-bg);
-  object-fit: cover;
-  box-shadow: var(--shadow-soft);
+  width: 100%;
+  height: 100%;
+}
+
+.hero-image-frame {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.hero-carousel-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.hero-photo-placeholder {
+  background: transparent;
+}
+
+.hero-carousel-button {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: 0;
+  color: #ffffff;
+  background: transparent;
+  filter: drop-shadow(0 0.2rem 0.35rem rgba(0, 0, 0, 0.24));
+  opacity: 0.24;
+  transition: color 160ms ease, opacity 160ms ease, transform 160ms ease;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.hero-carousel-button:hover,
+.hero-carousel-button:focus-visible {
+  color: #ffffff;
+  opacity: 0.68;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.hero-carousel-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 0.15rem;
+  border-radius: 999px;
+}
+
+.hero-carousel-button-prev {
+  left: 0.45rem;
+}
+
+.hero-carousel-button-next {
+  right: 0.45rem;
 }
 
 .theme-dark .hero-band {

@@ -1,5 +1,9 @@
-import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo } from 'react';
+import { CircleChevronLeft, CircleChevronRight } from 'lucide-react';
+import { A11y, EffectFade, Navigation } from 'swiper/modules';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import 'swiper/css/effect-fade';
 import { defaultHeroSelection, heroImages, heroIntros, heroNames } from './heroData';
 
 function text(value, language) {
@@ -11,7 +15,6 @@ function findById(records, id, fallbackId) {
 }
 
 export function Hero({ language, selection = defaultHeroSelection }) {
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const name = findById(heroNames, selection.nameId, defaultHeroSelection.nameId);
   const intro = findById(heroIntros, selection.introId, defaultHeroSelection.introId);
   const selectedImages = useMemo(() => {
@@ -19,13 +22,7 @@ export function Hero({ language, selection = defaultHeroSelection }) {
     return ids.map((id) => heroImages.find((image) => image.id === id)).filter(Boolean);
   }, [selection.imageIds]);
   const hasImages = selectedImages.length > 0;
-  const activeImage = hasImages ? selectedImages[activeImageIndex % selectedImages.length] : null;
   const hasMultipleImages = selectedImages.length > 1;
-
-  const goToImage = (direction) => {
-    if (!hasMultipleImages) return;
-    setActiveImageIndex((current) => (current + direction + selectedImages.length) % selectedImages.length);
-  };
 
   return (
     <section className={`hero-band ${hasImages ? 'hero-with-photo' : ''} mb-4`}>
@@ -42,24 +39,39 @@ export function Hero({ language, selection = defaultHeroSelection }) {
       </div>
       {hasImages && (
         <div className="hero-photo-box">
-          <div className="hero-carousel" aria-live="polite">
-            {activeImage?.src ? (
-              <img className="hero-carousel-image" src={activeImage.src} alt={text(activeImage.alt, language)} key={activeImage.id} />
-            ) : (
-              <div className="hero-photo-placeholder" key={activeImage?.id ?? 'placeholder'} />
-            )}
+          <Swiper
+            className="hero-carousel"
+            modules={[A11y, EffectFade, Navigation]}
+            effect="fade"
+            fadeEffect={{ crossFade: true }}
+            navigation={hasMultipleImages ? { prevEl: '.hero-carousel-button-prev', nextEl: '.hero-carousel-button-next' } : false}
+            allowTouchMove={hasMultipleImages}
+            rewind={hasMultipleImages}
+            speed={420}
+            slidesPerView={1}
+          >
+            {selectedImages.map((image) => (
+              <SwiperSlide key={image.id}>
+                <div className="hero-image-frame">
+                  {image.src ? (
+                    <img className="hero-carousel-image" src={image.src} alt={text(image.alt, language)} />
+                  ) : (
+                    <div className="hero-photo-placeholder" />
+                  )}
+                </div>
+              </SwiperSlide>
+            ))}
             {hasMultipleImages && (
-              <div className="hero-carousel-controls">
-                <button className="btn btn-icon btn-sm btn-outline-secondary" type="button" aria-label="Previous image" onClick={() => goToImage(-1)}>
-                  <ChevronLeft size={16} />
+              <>
+                <button className="hero-carousel-button hero-carousel-button-prev" type="button" aria-label="Previous image">
+                  <CircleChevronLeft size={32} strokeWidth={1.8} />
                 </button>
-                <span>{activeImageIndex + 1} / {selectedImages.length}</span>
-                <button className="btn btn-icon btn-sm btn-outline-secondary" type="button" aria-label="Next image" onClick={() => goToImage(1)}>
-                  <ChevronRight size={16} />
+                <button className="hero-carousel-button hero-carousel-button-next" type="button" aria-label="Next image">
+                  <CircleChevronRight size={32} strokeWidth={1.8} />
                 </button>
-              </div>
+              </>
             )}
-          </div>
+          </Swiper>
         </div>
       )}
     </section>

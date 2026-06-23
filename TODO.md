@@ -15,3 +15,8 @@
 - Add more regular sections when the site structure becomes clearer.
 - Add image assets for Hero and in-page content.
 - Lazy-load console-only libraries to reduce the public page bundle size.
+
+## Unresolved Issues
+
+- Hero carousel arrows should automatically contrast with the current image/background while staying semi-transparent.
+- Hero image sizing still needs a reliable constraint model: images should stay inside an invisible maximum square, keep their original ratio, and never overflow.
