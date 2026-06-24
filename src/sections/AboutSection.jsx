@@ -1,4 +1,4 @@
-export function AboutSection({ language }) {
+function DefaultAbout({ language }) {
   if (language === 'en') {
     return (
       <div className="section-body about-section">
@@ -52,4 +52,93 @@ export function AboutSection({ language }) {
       </ul>
     </div>
   );
+}
+
+function ConciseAbout({ language }) {
+  if (language === 'en') {
+    return (
+      <div className="section-body about-section">
+        <p className="section-lead">
+          Write a short, direct introduction here. This version is useful when you want the homepage to feel quick and focused.
+        </p>
+        <div className="feature-block">
+          <h3>Now</h3>
+          <p>Use this paragraph for what you are studying, building, or paying attention to right now.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="section-body about-section">
+      <p className="section-lead">
+        这里写一版更短、更直接的自我介绍。如果你希望首页更干净，可以用这个版本。
+      </p>
+      <div className="feature-block">
+        <h3>现在</h3>
+        <p>这里写你现在正在学习、创作或关注的事情。</p>
+      </div>
+    </div>
+  );
+}
+
+function StoryAbout({ language }) {
+  if (language === 'en') {
+    return (
+      <div className="section-body about-section">
+        <p className="section-lead">
+          Write a more narrative introduction here. This version can be slower, warmer, and more personal.
+        </p>
+        <div className="feature-block">
+          <h3>How I Got Here</h3>
+          <p>
+            Use this area for a small story: why you care about your field, what changed your direction, or what kind of work keeps pulling you forward.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="section-body about-section">
+      <p className="section-lead">
+        这里写一版更像故事的自我介绍。它可以更慢一点、更温和一点，也更个人一点。
+      </p>
+      <div className="feature-block">
+        <h3>我是怎么走到这里的</h3>
+        <p>
+          这里可以写一个小故事：你为什么在意自己的领域，什么改变了你的方向，或者哪类工作一直吸引你往前走。
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export const aboutSectionMeta = {
+  activeVariantId: 'default',
+  variants: [
+    {
+      id: 'default',
+      title: { zh: '默认版', en: 'Default' },
+    },
+    {
+      id: 'concise',
+      title: { zh: '简洁版', en: 'Concise' },
+    },
+    {
+      id: 'story',
+      title: { zh: '故事版', en: 'Story' },
+    },
+  ],
+};
+
+const aboutVariants = {
+  default: DefaultAbout,
+  concise: ConciseAbout,
+  story: StoryAbout,
+};
+
+export function AboutSection({ section, language }) {
+  const AboutVariant = aboutVariants[section.activeVariantId] ?? DefaultAbout;
+  return <AboutVariant language={language} />;
 }

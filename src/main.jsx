@@ -14,12 +14,11 @@ import {
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'swiper/css';
 import 'swiper/css/effect-fade';
-import 'swiper/css/navigation';
 import './styles.css';
 import { Hero } from './hero/Hero';
 import { defaultHeroSelection, heroImages, heroIntros, heroNames } from './hero/heroData';
 import { defaultSections } from './siteData';
-import { renderSectionContent } from './sections';
+import { getSectionDefinition, renderSectionContent } from './sections';
 
 const SETTINGS_KEY = 'my-web-settings';
 const DEFAULT_LAYOUT_PANEL_HEIGHT = 280;
@@ -53,11 +52,8 @@ const ui = {
     reset: '重置设置',
     contentSort: '板块排序',
     visibilityControl: '可见控制',
-    cancel: '取消',
-    save: '保存',
     visible: '可见',
-    dragToSort: '拖动普通板块调整顺序，点击保存后生效。',
-    sortSaved: '排序已保存',
+    dragToSort: '拖动普通板块即可立即调整顺序。',
     noSections: '暂无普通内容板块。Hero 固定显示；普通板块请在 src/siteData.js 和 src/sections 中添加。',
   },
   en: {
@@ -87,11 +83,8 @@ const ui = {
     reset: 'Reset Settings',
     contentSort: 'Section Sorting',
     visibilityControl: 'Visibility Control',
-    cancel: 'Cancel',
-    save: 'Save',
     visible: 'Visible',
-    dragToSort: 'Drag regular sections to reorder. Changes apply after saving.',
-    sortSaved: 'Sorting saved',
+    dragToSort: 'Drag regular sections to reorder. Changes apply immediately.',
     noSections: 'No regular content sections yet. Hero is fixed; add regular sections in src/siteData.js and src/sections.',
   },
 };
@@ -99,6 +92,12 @@ function cloneSection(section) {
   return {
     ...section,
     title: { ...(section.title ?? {}) },
+    variants: Array.isArray(section.variants)
+      ? section.variants.map((variant) => ({
+        ...variant,
+        title: { ...(variant.title ?? {}) },
+      }))
+      : undefined,
   };
 }
 
@@ -109,7 +108,7 @@ function buildDefaultSettings() {
     editMode: false,
     hero: { ...defaultHeroSelection },
     layout: {},
-    sections: defaultSections.map(cloneSection),
+    sections: defaultSections.map((section) => cloneSection(getSectionDefinition(section))),
   };
 }
 
@@ -130,10 +129,23 @@ function normalizeSettings(storedSettings) {
     sections: defaults.sections
       .map((section, index) => {
         const storedSection = storedSections.find((record) => record.id === section.id);
+        const variants = Array.isArray(section.variants)
+          ? section.variants.map((variant) => ({
+            ...variant,
+            title: { ...(variant.title ?? {}) },
+          }))
+          : undefined;
+        const storedVariantId = storedSection?.activeVariantId;
+        const fallbackVariantId = section.activeVariantId ?? variants?.[0]?.id;
+        const activeVariantId = variants?.some((variant) => variant.id === storedVariantId)
+          ? storedVariantId
+          : fallbackVariantId;
         return {
         id: section.id,
         visible: storedSection?.visible ?? section.visible !== false,
         order: Number(storedSection?.order ?? section.order ?? index + 1),
+        activeVariantId,
+        variants,
         title: {
           zh: section.title?.zh ?? '新板块',
           en: section.title?.en ?? 'New Section',
@@ -267,7 +279,15 @@ function App() {
       ),
     }));
   };
-  const saveContentSort = ({ sections }) => {
+  const selectSectionVariant = (sectionId, variantId) => {
+    setSettings((current) => ({
+      ...current,
+      sections: current.sections.map((section) =>
+        section.id === sectionId ? { ...section, activeVariantId: variantId } : section,
+      ),
+    }));
+  };
+  const applyContentSort = ({ sections }) => {
     setSettings((current) => ({
       ...current,
       sections: resequence(sections).map((section) => {
@@ -306,7 +326,8 @@ function App() {
         onUpdate={updateSettings}
         onUpdateHero={updateHero}
         onToggleSection={toggleSection}
-        onSaveContentSort={saveContentSort}
+        onSelectSectionVariant={selectSectionVariant}
+        onApplyContentSort={applyContentSort}
         onReset={() => setSettings(buildDefaultSettings())}
       />
     );
@@ -616,7 +637,7 @@ function SectionPanel({ panel, language, editMode = false }) {
 }
 
 function OwnerConsole(props) {
-  const { settings, hero, sections, text, language, onClose, onEnterLayout, onUpdate, onUpdateHero, onToggleSection, onSaveContentSort, onReset } = props;
+  const { settings, hero, sections, text, language, onClose, onEnterLayout, onUpdate, onUpdateHero, onToggleSection, onSelectSectionVariant, onApplyContentSort, onReset } = props;
   const [activeTab, setActiveTab] = useState('hero');
 
   return (
@@ -638,8 +659,8 @@ function OwnerConsole(props) {
           </aside>
           <section className="console-main">
             {activeTab === 'hero' && <HeroControl hero={hero} text={text} language={language} onUpdate={onUpdateHero} />}
-            {activeTab === 'sort' && <ContentSortControl sections={sections} text={text} language={language} onSave={onSaveContentSort} />}
-            {activeTab === 'visibility' && <VisibilityControl sections={sections} text={text} language={language} onToggleSection={onToggleSection} />}
+            {activeTab === 'sort' && <ContentSortControl sections={sections} text={text} language={language} onApply={onApplyContentSort} />}
+            {activeTab === 'visibility' && <VisibilityControl sections={sections} text={text} language={language} onToggleSection={onToggleSection} onSelectSectionVariant={onSelectSectionVariant} />}
             {activeTab === 'layout' && <LayoutControl settings={settings} text={text} onReset={onReset} onEnter={() => { onUpdate({ editMode: true }); onEnterLayout(); }} />}
           </section>
       </div>
@@ -712,25 +733,12 @@ function HeroControl({ hero, text, language, onUpdate }) {
   );
 }
 
-function ContentSortControl({ sections, text, language, onSave }) {
+function ContentSortControl({ sections, text, language, onApply }) {
   const [sectionDraft, setSectionDraft] = useState(() => resequence(sortByOrder(sections)));
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setSectionDraft(resequence(sortByOrder(sections)));
   }, [sections]);
-
-  const resetDraft = () => {
-    setSectionDraft(resequence(sortByOrder(sections)));
-    setSaved(false);
-  };
-
-  const saveDraft = () => {
-    const nextSections = resequence(sectionDraft);
-    onSave({ sections: nextSections });
-    setSectionDraft(nextSections);
-    setSaved(true);
-  };
 
   return (
     <div>
@@ -739,15 +747,7 @@ function ContentSortControl({ sections, text, language, onSave }) {
           <h3 className="h5 fw-bold mb-1">{text.contentSort}</h3>
           <p className="text-muted mb-0">{text.dragToSort}</p>
         </div>
-        {sectionDraft.length > 0 && (
-          <div className="section-actions">
-            <button className="btn btn-outline-danger btn-icon" type="button" aria-label={text.cancel} title={text.cancel} onClick={resetDraft}><X size={17} /></button>
-            <button className="btn btn-outline-primary btn-icon" type="button" aria-label={text.save} title={text.save} onClick={saveDraft}><Check size={17} /></button>
-          </div>
-        )}
       </div>
-
-      {saved && <p className="layout-save-state static mb-3">{text.sortSaved}</p>}
 
       <div className="sort-tree">
         {sectionDraft.length === 0 ? <EmptyConsoleState text={text} /> : sectionDraft.map((section, index) => (
@@ -758,8 +758,11 @@ function ContentSortControl({ sections, text, language, onSave }) {
               draggable
               scope="sections"
               onMove={(from, to) => {
-                setSectionDraft((current) => moveRecord(current, from, to));
-                setSaved(false);
+                setSectionDraft((current) => {
+                  const nextSections = moveRecord(current, from, to);
+                  onApply({ sections: nextSections });
+                  return nextSections;
+                });
               }}
               index={index}
             />
@@ -804,7 +807,6 @@ function SortRow({ label, meta, draggable = false, index, scope, onMove }) {
       onDragOver={(event) => event.preventDefault()}
       onDrop={handleDrop}
     >
-      <span className="btn btn-icon btn-sm btn-outline-secondary sort-toggle" aria-hidden="true"><GripVertical size={15} /></span>
       <GripVertical className="sort-grip" size={16} aria-hidden="true" />
       <span className="sort-label">{label}</span>
       <span className="sort-meta">{meta}</span>
@@ -812,7 +814,7 @@ function SortRow({ label, meta, draggable = false, index, scope, onMove }) {
   );
 }
 
-function VisibilityControl({ sections, text, language, onToggleSection }) {
+function VisibilityControl({ sections, text, language, onToggleSection, onSelectSectionVariant }) {
   return (
     <div>
       <div className="console-title-row"><h3 className="h5 fw-bold mb-1">{text.visibilityControl}</h3></div>
@@ -825,6 +827,23 @@ function VisibilityControl({ sections, text, language, onToggleSection }) {
                 <div className="tree-section-title">{sectionVisible ? <Eye size={18} /> : <EyeOff size={18} />}<div><strong>{getText(section.title, language)}</strong><span>{section.id}</span></div></div>
                 <SwitchToggle checked={sectionVisible} label={text.visible} hideLabel onChange={() => onToggleSection(section.id)} />
               </div>
+              {Array.isArray(section.variants) && section.variants.length > 0 && (
+                <div className="variant-radio-list">
+                  {section.variants.map((variant) => (
+                    <label className="variant-radio-row" key={variant.id}>
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name={`${section.id}-variant`}
+                        checked={section.activeVariantId === variant.id}
+                        disabled={!sectionVisible}
+                        onChange={() => onSelectSectionVariant(section.id, variant.id)}
+                      />
+                      <span>{getText(variant.title, language)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </article>
           );
         })}

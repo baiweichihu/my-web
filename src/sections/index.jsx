@@ -1,7 +1,11 @@
-import { AboutSection } from './AboutSection';
+import { AboutSection, aboutSectionMeta } from './AboutSection';
 
 const sectionComponents = {
   about: AboutSection,
+};
+
+const sectionMeta = {
+  about: aboutSectionMeta,
 };
 
 function EmptySection({ section }) {
@@ -17,4 +21,13 @@ function EmptySection({ section }) {
 export function renderSectionContent(section, language) {
   const SectionContent = sectionComponents[section.id] ?? EmptySection;
   return <SectionContent section={section} language={language} />;
+}
+
+export function getSectionDefinition(section) {
+  const meta = sectionMeta[section.id] ?? {};
+  return {
+    ...section,
+    ...meta,
+    title: section.title,
+  };
 }

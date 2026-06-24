@@ -35,8 +35,8 @@ export const heroIntros = [
     id: 'gentle',
     label: { zh: '温和版', en: 'Gentle' },
     text: {
-      zh: '这里写一段温和、自然的自我介绍。它会跟随语言切换。',
-      en: 'Write a gentle and natural introduction here. It changes with the selected language.',
+      zh: '一个性格幽默风趣、内心善良有爱的社恐少年。',
+      en: 'A humorous and kind introverted boy.',
     },
   },
   {
@@ -62,23 +62,17 @@ export const heroImages = [
     id: 'portrait',
     label: { zh: '证件照', en: 'Portrait' },
     src: portrait,
-    alt: { zh: '证件照', en: 'Portrait' },
-  },
-  {
-    id: 'personal_photo',
-    label: { zh: '生活照', en: 'Personal Photo' },
-    src: '',
-    alt: { zh: '生活照', en: 'Personal photo' },
+    alt: { zh: '人头像', en: 'Portrait' },
   },
   {
     id: 'qq_avatar',
-    label: { zh: '可爱头像', en: 'Cute Avatar' },
+    label: { zh: 'QQ头像', en: 'QQ Avatar' },
     src: qq_avatar,
-    alt: { zh: '可爱头像', en: 'Cute avatar' },
+    alt: { zh: '可爱二次元头像', en: 'Cute Anime Avatar' },
   },
   {
     id: 'wechat_avatar',
-    label: { zh: '尼克狐尼克', en: 'Nick the Fox' },
+    label: { zh: '微信头像', en: 'WeChat Avatar' },
     src: wechat_avatar,
     alt: { zh: '尼克狐尼克', en: 'Nick the Fox' },
   }

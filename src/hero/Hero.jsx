@@ -27,10 +27,7 @@ export function Hero({ language, selection = defaultHeroSelection }) {
   return (
     <section className={`hero-band ${hasImages ? 'hero-with-photo' : ''} mb-4`}>
       <div className="hero-copy">
-        <p className="text-uppercase small text-primary-emphasis fw-semibold mb-2">
-          {name.label}
-        </p>
-        <h1 className="display-6 fw-bold mb-3">
+        <h1 className="hero-name fw-bold mb-3">
           {name.value}
         </h1>
         <p className="lead mb-0">
@@ -52,22 +49,21 @@ export function Hero({ language, selection = defaultHeroSelection }) {
           >
             {selectedImages.map((image) => (
               <SwiperSlide key={image.id}>
-                <div className="hero-image-frame">
-                  {image.src ? (
-                    <img className="hero-carousel-image" src={image.src} alt={text(image.alt, language)} />
-                  ) : (
-                    <div className="hero-photo-placeholder" />
-                  )}
-                </div>
+                <div
+                  className="hero-image-frame"
+                  role={image.src ? 'img' : undefined}
+                  aria-label={image.src ? text(image.alt, language) : undefined}
+                  style={image.src ? { backgroundImage: `url(${image.src})` } : undefined}
+                />
               </SwiperSlide>
             ))}
             {hasMultipleImages && (
               <>
                 <button className="hero-carousel-button hero-carousel-button-prev" type="button" aria-label="Previous image">
-                  <CircleChevronLeft size={32} strokeWidth={1.8} />
+                  <CircleChevronLeft className="hero-carousel-icon" size={32} strokeWidth={1.8} />
                 </button>
                 <button className="hero-carousel-button hero-carousel-button-next" type="button" aria-label="Next image">
-                  <CircleChevronRight size={32} strokeWidth={1.8} />
+                  <CircleChevronRight className="hero-carousel-icon" size={32} strokeWidth={1.8} />
                 </button>
               </>
             )}
