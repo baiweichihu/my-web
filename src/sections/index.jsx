@@ -1,11 +1,11 @@
-import { AboutSection, aboutSectionMeta } from './AboutSection';
+import { AboutSection } from './AboutSection';
+import { InterestsSection } from './InterestsSection';
+import { StudySection } from './StudySection';
 
 const sectionComponents = {
   about: AboutSection,
-};
-
-const sectionMeta = {
-  about: aboutSectionMeta,
+  interests: InterestsSection,
+  study: StudySection,
 };
 
 function EmptySection({ section }) {
@@ -24,10 +24,8 @@ export function renderSectionContent(section, language) {
 }
 
 export function getSectionDefinition(section) {
-  const meta = sectionMeta[section.id] ?? {};
   return {
     ...section,
-    ...meta,
     title: section.title,
   };
 }

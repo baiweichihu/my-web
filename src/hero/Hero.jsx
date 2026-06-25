@@ -14,7 +14,7 @@ function findById(records, id, fallbackId) {
   return records.find((record) => record.id === id) ?? records.find((record) => record.id === fallbackId) ?? records[0];
 }
 
-export function Hero({ language, selection = defaultHeroSelection }) {
+export function Hero({ language, selection = defaultHeroSelection, updatedAtLabel = 'Updated' }) {
   const name = findById(heroNames, selection.nameId, defaultHeroSelection.nameId);
   const intro = findById(heroIntros, selection.introId, defaultHeroSelection.introId);
   const selectedImages = useMemo(() => {
@@ -34,6 +34,11 @@ export function Hero({ language, selection = defaultHeroSelection }) {
           {text(intro.text, language)}
         </p>
       </div>
+      {selection.updatedAt && (
+        <p className="hero-updated-at mb-0">
+          {updatedAtLabel} <time dateTime={selection.updatedAt}>{selection.updatedAt}</time>
+        </p>
+      )}
       {hasImages && (
         <div className="hero-photo-box">
           <Swiper

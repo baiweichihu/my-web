@@ -14,6 +14,7 @@
 - Add real personal content to the self-introduction section.
 - Add more regular sections when the site structure becomes clearer.
 - Add image assets for Hero and in-page content.
+- Add a guestbook with a separate Appwrite table after the main site content sync is stable.
 - Lazy-load console-only libraries to reduce the public page bundle size.
 
 ## Resolved Issues

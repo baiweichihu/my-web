@@ -82,4 +82,5 @@ export const defaultHeroSelection = {
   nameId: 'zh-name',
   introId: 'gentle',
   imageIds: ['portrait'],
+  updatedAt: '2026-06-25',
 };

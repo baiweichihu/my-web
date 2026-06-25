@@ -15,6 +15,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'swiper/css';
 import 'swiper/css/effect-fade';
 import './styles.css';
+import { isAppwriteConfigured } from './appwrite/client';
+import { loadSiteContent, saveSiteContent } from './appwrite/siteContent';
 import { Hero } from './hero/Hero';
 import { defaultHeroSelection, heroImages, heroIntros, heroNames } from './hero/heroData';
 import { defaultSections } from './siteData';
@@ -46,6 +48,7 @@ const ui = {
     theme: '主题',
     light: '亮色',
     dark: '深色',
+    updatedAt: '更新于',
     ownerArea: '站点配置',
     consoleTitle: '控制台',
     close: '关闭',
@@ -77,6 +80,7 @@ const ui = {
     theme: 'Theme',
     light: 'Light',
     dark: 'Deep Blue',
+    updatedAt: 'Updated',
     ownerArea: 'Site Config',
     consoleTitle: 'Console',
     close: 'Close',
@@ -92,12 +96,7 @@ function cloneSection(section) {
   return {
     ...section,
     title: { ...(section.title ?? {}) },
-    variants: Array.isArray(section.variants)
-      ? section.variants.map((variant) => ({
-        ...variant,
-        title: { ...(variant.title ?? {}) },
-      }))
-      : undefined,
+    updatedAt: section.updatedAt,
   };
 }
 
@@ -125,27 +124,16 @@ function normalizeSettings(storedSettings) {
       ...defaults.hero,
       ...(storedSettings.hero ?? {}),
       imageIds: Array.isArray(storedSettings.hero?.imageIds) ? storedSettings.hero.imageIds : defaults.hero.imageIds,
+      updatedAt: storedSettings.hero?.updatedAt ?? defaults.hero.updatedAt,
     },
     sections: defaults.sections
       .map((section, index) => {
         const storedSection = storedSections.find((record) => record.id === section.id);
-        const variants = Array.isArray(section.variants)
-          ? section.variants.map((variant) => ({
-            ...variant,
-            title: { ...(variant.title ?? {}) },
-          }))
-          : undefined;
-        const storedVariantId = storedSection?.activeVariantId;
-        const fallbackVariantId = section.activeVariantId ?? variants?.[0]?.id;
-        const activeVariantId = variants?.some((variant) => variant.id === storedVariantId)
-          ? storedVariantId
-          : fallbackVariantId;
         return {
         id: section.id,
         visible: storedSection?.visible ?? section.visible !== false,
         order: Number(storedSection?.order ?? section.order ?? index + 1),
-        activeVariantId,
-        variants,
+        updatedAt: storedSection?.updatedAt ?? section.updatedAt,
         title: {
           zh: section.title?.zh ?? '新板块',
           en: section.title?.en ?? 'New Section',
@@ -244,6 +232,8 @@ function copyLayoutMap(layout = {}) {
 
 function App() {
   const [settings, setSettings] = useState(readStoredSettings);
+  const [remoteLoaded, setRemoteLoaded] = useState(!isAppwriteConfigured);
+  const [remoteSaveState, setRemoteSaveState] = useState('idle');
   const [view, setView] = useState('home');
   const [layoutDragging, setLayoutDragging] = useState(false);
   const [layoutSaved, setLayoutSaved] = useState(false);
@@ -254,6 +244,44 @@ function App() {
     window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     document.documentElement.dataset.bsTheme = settings.theme === 'dark' ? 'dark' : 'light';
   }, [settings]);
+
+  useEffect(() => {
+    if (!isAppwriteConfigured) return;
+
+    let cancelled = false;
+
+    loadSiteContent()
+      .then((remoteSettings) => {
+        if (cancelled) return;
+        if (remoteSettings) setSettings(normalizeSettings(remoteSettings));
+      })
+      .catch((error) => {
+        console.error('Failed to load Appwrite site content.', error);
+      })
+      .finally(() => {
+        if (!cancelled) setRemoteLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAppwriteConfigured || !remoteLoaded) return;
+
+    setRemoteSaveState('saving');
+    const timeoutId = window.setTimeout(() => {
+      saveSiteContent(settings)
+        .then(() => setRemoteSaveState('saved'))
+        .catch((error) => {
+          console.error('Failed to save Appwrite site content.', error);
+          setRemoteSaveState('error');
+        });
+    }, 650);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [settings, remoteLoaded]);
 
   const text = ui[settings.language];
   const sortedSections = useMemo(() => sortByOrder(settings.sections), [settings.sections]);
@@ -276,14 +304,6 @@ function App() {
       ...current,
       sections: current.sections.map((section) =>
         section.id === sectionId ? { ...section, visible: section.visible === false } : section,
-      ),
-    }));
-  };
-  const selectSectionVariant = (sectionId, variantId) => {
-    setSettings((current) => ({
-      ...current,
-      sections: current.sections.map((section) =>
-        section.id === sectionId ? { ...section, activeVariantId: variantId } : section,
       ),
     }));
   };
@@ -326,8 +346,8 @@ function App() {
         onUpdate={updateSettings}
         onUpdateHero={updateHero}
         onToggleSection={toggleSection}
-        onSelectSectionVariant={selectSectionVariant}
         onApplyContentSort={applyContentSort}
+        remoteSaveState={remoteSaveState}
         onReset={() => setSettings(buildDefaultSettings())}
       />
     );
@@ -385,7 +405,7 @@ function App() {
             {layoutIssues.length ? formatLayoutIssue(layoutIssues, text) : text.layoutNoOverlap}
           </div>
         )}
-        <Hero language={settings.language} selection={settings.hero} />
+        <Hero language={settings.language} selection={settings.hero} updatedAtLabel={text.updatedAt} />
         <Dashboard
           sections={sortedSections}
           language={settings.language}
@@ -632,12 +652,17 @@ function SectionPanel({ panel, language, editMode = false }) {
         <span className="section-mark">{sectionNumber(panel.index)}</span>
       </div>
       {renderSectionContent(panel.section, language)}
+      {panel.section.updatedAt && (
+        <p className="section-updated-at mb-0">
+          {getText({ zh: '更新于', en: 'Updated' }, language)} <time dateTime={panel.section.updatedAt}>{panel.section.updatedAt}</time>
+        </p>
+      )}
     </section>
   );
 }
 
 function OwnerConsole(props) {
-  const { settings, hero, sections, text, language, onClose, onEnterLayout, onUpdate, onUpdateHero, onToggleSection, onSelectSectionVariant, onApplyContentSort, onReset } = props;
+  const { settings, hero, sections, text, language, onClose, onEnterLayout, onUpdate, onUpdateHero, onToggleSection, onApplyContentSort, remoteSaveState, onReset } = props;
   const [activeTab, setActiveTab] = useState('hero');
 
   return (
@@ -646,6 +671,8 @@ function OwnerConsole(props) {
         <div>
           <p className="section-kicker mb-1">{text.ownerArea}</p>
           <h2 className="h4 fw-bold mb-0">{text.consoleTitle}</h2>
+          {!isAppwriteConfigured && <p className="text-muted small mb-0">Appwrite is not configured yet.</p>}
+          {isAppwriteConfigured && <p className="text-muted small mb-0">Appwrite: {remoteSaveState}</p>}
         </div>
         <button className="btn btn-icon btn-outline-secondary" type="button" aria-label={text.close} onClick={onClose}><X size={18} /></button>
       </header>
@@ -660,7 +687,7 @@ function OwnerConsole(props) {
           <section className="console-main">
             {activeTab === 'hero' && <HeroControl hero={hero} text={text} language={language} onUpdate={onUpdateHero} />}
             {activeTab === 'sort' && <ContentSortControl sections={sections} text={text} language={language} onApply={onApplyContentSort} />}
-            {activeTab === 'visibility' && <VisibilityControl sections={sections} text={text} language={language} onToggleSection={onToggleSection} onSelectSectionVariant={onSelectSectionVariant} />}
+            {activeTab === 'visibility' && <VisibilityControl sections={sections} text={text} language={language} onToggleSection={onToggleSection} />}
             {activeTab === 'layout' && <LayoutControl settings={settings} text={text} onReset={onReset} onEnter={() => { onUpdate({ editMode: true }); onEnterLayout(); }} />}
           </section>
       </div>
@@ -814,7 +841,7 @@ function SortRow({ label, meta, draggable = false, index, scope, onMove }) {
   );
 }
 
-function VisibilityControl({ sections, text, language, onToggleSection, onSelectSectionVariant }) {
+function VisibilityControl({ sections, text, language, onToggleSection }) {
   return (
     <div>
       <div className="console-title-row"><h3 className="h5 fw-bold mb-1">{text.visibilityControl}</h3></div>
@@ -827,23 +854,6 @@ function VisibilityControl({ sections, text, language, onToggleSection, onSelect
                 <div className="tree-section-title">{sectionVisible ? <Eye size={18} /> : <EyeOff size={18} />}<div><strong>{getText(section.title, language)}</strong><span>{section.id}</span></div></div>
                 <SwitchToggle checked={sectionVisible} label={text.visible} hideLabel onChange={() => onToggleSection(section.id)} />
               </div>
-              {Array.isArray(section.variants) && section.variants.length > 0 && (
-                <div className="variant-radio-list">
-                  {section.variants.map((variant) => (
-                    <label className="variant-radio-row" key={variant.id}>
-                      <input
-                        className="form-check-input"
-                        type="radio"
-                        name={`${section.id}-variant`}
-                        checked={section.activeVariantId === variant.id}
-                        disabled={!sectionVisible}
-                        onChange={() => onSelectSectionVariant(section.id, variant.id)}
-                      />
-                      <span>{getText(variant.title, language)}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
             </article>
           );
         })}
