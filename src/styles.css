@@ -287,18 +287,14 @@ body {
   position: absolute;
   right: clamp(1.5rem, 4vw, 3rem);
   bottom: 0.9rem;
-  color: rgba(32, 49, 58, 0.46) !important;
-  font-size: 0.7rem;
+  color: color-mix(in srgb, var(--text-muted) 70%, transparent) !important;
+  font-size: 0.72rem;
   font-weight: 500;
-}
-
-.theme-dark .hero-updated-at {
-  color: rgba(237, 247, 251, 0.42) !important;
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 
@@ -372,10 +368,6 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
-.dashboard-grid > section:first-child {
-  grid-column: span 2;
-}
-
 .section-kicker {
   color: var(--accent-strong);
   font-size: 0.78rem;
@@ -429,18 +421,79 @@ body {
   line-height: 1.68;
 }
 
-.about-card {
-  padding: 1rem;
+.detail-list,
+.interest-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-main);
+}
+
+.detail-list li,
+.interest-list li {
+  position: relative;
+  padding: 0.95rem 1rem 0.95rem 1.95rem;
   border: 1px solid var(--line-soft);
   border-radius: 0.5rem;
   background: var(--panel-strong);
+  line-height: 1.68;
 }
 
-.about-card h3 {
-  margin: 0 0 0.65rem;
+.detail-list li::before,
+.interest-list li::before {
+  content: "·";
+  position: absolute;
+  left: 1rem;
+  top: 0.95rem;
   color: var(--accent-strong);
-  font-size: 0.92rem;
   font-weight: 800;
+}
+
+.detail-label,
+.interest-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.study-note-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.9rem;
+}
+
+.study-note {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.study-note-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.study-note-heading h4 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.study-note-heading span {
+  color: color-mix(in srgb, var(--text-muted) 72%, transparent);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.study-note p {
+  margin: 0;
+  color: var(--text-main);
+  line-height: 1.68;
 }
 
 .section-updated-at {
@@ -449,7 +502,7 @@ body {
   bottom: 0.8rem;
   color: color-mix(in srgb, var(--text-muted) 70%, transparent);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .fact-grid {
@@ -1022,10 +1075,8 @@ body {
     gap: 0.2rem;
   }
 
-  .dashboard-grid,
-  .dashboard-grid > section:first-child {
+  .dashboard-grid {
     grid-template-columns: 1fr;
-    grid-column: span 1;
   }
 
   .fact-grid,

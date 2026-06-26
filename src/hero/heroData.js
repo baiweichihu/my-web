@@ -81,6 +81,6 @@ export const heroImages = [
 export const defaultHeroSelection = {
   nameId: 'zh-name',
   introId: 'gentle',
-  imageIds: ['portrait'],
+  imageIds: ['wechat_avatar'],
   updatedAt: '2026-06-25',
 };
