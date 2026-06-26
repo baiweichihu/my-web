@@ -124,7 +124,7 @@ function normalizeSettings(storedSettings) {
       ...defaults.hero,
       ...(storedSettings.hero ?? {}),
       imageIds: Array.isArray(storedSettings.hero?.imageIds) ? storedSettings.hero.imageIds : defaults.hero.imageIds,
-      updatedAt: storedSettings.hero?.updatedAt ?? defaults.hero.updatedAt,
+      updatedAt: defaults.hero.updatedAt,
     },
     sections: defaults.sections
       .map((section, index) => {
@@ -133,7 +133,7 @@ function normalizeSettings(storedSettings) {
         id: section.id,
         visible: storedSection?.visible ?? section.visible !== false,
         order: Number(storedSection?.order ?? section.order ?? index + 1),
-        updatedAt: storedSection?.updatedAt ?? section.updatedAt,
+        updatedAt: section.updatedAt,
         title: {
           zh: section.title?.zh ?? '新板块',
           en: section.title?.en ?? 'New Section',

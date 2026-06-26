@@ -1,6 +1,7 @@
 import qq_avatar from '../assets/hero/qq_avatar.jpg';
 import wechat_avatar from '../assets/hero/wechat_avatar.jpg';
 import portrait from '../assets/hero/portrait.jpg'
+import { generatedUpdatedAt } from '../generated/updatedAt';
 
 export const heroNames = [
   {
@@ -82,5 +83,5 @@ export const defaultHeroSelection = {
   nameId: 'zh-name',
   introId: 'gentle',
   imageIds: ['wechat_avatar'],
-  updatedAt: '2026-06-25',
+  updatedAt: generatedUpdatedAt.hero,
 };
